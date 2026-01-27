@@ -50,4 +50,4 @@ I am a 13-year-old developer passionate about building high-performance AI syste
 * **Vision:** Creating an AI architecture that is faster, more logical, and more efficient than GPT-4o.
 
 ---
-> *"The hardware limits may be physical, but the logic in the code is infinite."*
+> The hardware limits may be physical, but the logic in the code is infinite.
