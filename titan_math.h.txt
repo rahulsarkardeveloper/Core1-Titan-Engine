@@ -1,0 +1,25 @@
+#ifndef TITAN_MATH_H
+#define TITAN_MATH_H
+
+#include <cmath>
+
+namespace TitanLogic {
+    // Neural-Symbolic Hybrid Gate
+    // এটি নিশ্চিত করে যে ম্যাথমেটিক্যাল উত্তরগুলো লজিক্যাল সীমার মধ্যে থাকে
+    inline float validate_reasoning(float neural_val, float min_bound, float max_bound) {
+        if (neural_val < min_bound) return min_bound;
+        if (neural_val > max_bound) return max_bound;
+        return neural_val;
+    }
+
+    // High-Precision Constants for A100 Tensor Ops
+    const double TITAN_EPSILON = 1e-9;
+    const float TITAN_LEARNING_RATE = 0.0001f;
+
+    // Softmax Stability Factor
+    inline float stable_exp(float x) {
+        return std::exp(x - 1e-5f); 
+    }
+}
+
+#endif

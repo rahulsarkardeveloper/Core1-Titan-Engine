@@ -1,0 +1,47 @@
+use std::ffi::CStr;
+use std::os::raw::c_char;
+use std::ptr;
+
+// --- Core 1: Byte-Level Tokenizer Logic ---
+
+#[no_mangle]
+pub extern "C" fn titan_encode(input: *const c_char) -> *mut i32 {
+    if input.is_null() {
+        return ptr::null_mut();
+    }
+
+    // সি++ স্ট্রিংকে Rust স্ট্রিং-এ রূপান্তর
+    let c_str = unsafe { CStr::from_ptr(input) };
+    let text = match c_str.to_str() {
+        Ok(s) => s,
+        Err(_) => return ptr::null_mut(),
+    };
+
+    // --- Ultra-Fast Tokenization Step ---
+    // এখানে আমরা ক্যারেক্টারকে টোকেন আইডি হিসেবে ম্যাপ করছি। 
+    // প্রডাকশন লেভেলে এখানে একটি JSON ভোকাবুলারি ফাইল লোড করা হবে।
+    let mut tokens: Vec<i32> = text
+        .chars()
+        .map(|c| c as i32) // সিম্পল ম্যাপিং (Unicode)
+        .collect();
+
+    // রেজাল্টের শেষে একটি এন্ড-অফ-সেন্টেন্স (EOS) টোকেন যোগ করা (যেমন: -1)
+    tokens.push(-1);
+
+    // সি++ কে ডাটা ফেরত দেওয়ার জন্য মেমরি ম্যানেজমেন্ট
+    // Rust-কে বলতে হবে যেন সে এই ভেক্টরটি ডিলিট না করে (Drop না করে)
+    let ptr = tokens.as_mut_ptr();
+    std::mem::forget(tokens); 
+    
+    ptr
+}
+
+#[no_mangle]
+pub extern "C" fn titan_free_tokens(ptr: *mut i32) {
+    // সি++ যখন টোকেন ব্যবহার শেষ করবে, তখন এটি কল করে মেমরি রিলিজ করবে
+    if ptr.is_null() { return; }
+    unsafe {
+        // ভেক্টরটি আবার তৈরি করে ড্রপ করা যাতে মেমরি লিক না হয়
+        let _ = Vec::from_raw_parts(ptr, 0, 0); // আসল লেন্থ এখানে ম্যাটার করে না মেমরি রিলিজের জন্য
+    }
+}

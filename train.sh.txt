@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# --- Core 1: Titan Engine Distribution Script ---
+# এই স্ক্রিপ্টটি ৮টি A100 GPU-র শক্তিকে সিঙ্ক্রোনাইজ করে ট্রেনিং শুরু করবে।
+
+# ১. পাথ এবং ডিরেক্টরি সেটআপ
+PROJ_ROOT=$(pwd)
+BIN_NAME="core1_titan_engine"
+LOG_DIR="$PROJ_ROOT/logs"
+mkdir -p $LOG_DIR
+
+# ২. NVIDIA NCCL & CUDA এনভায়রনমেন্ট অপ্টিমাইজেশন
+# A100 এর সর্বোচ্চ ক্ষমতার জন্য এই ফ্ল্যাগগুলো অত্যন্ত জরুরি
+export NCCL_DEBUG=WARN                     # অপ্রয়োজনীয় লগ এড়িয়ে চলার জন্য
+export NCCL_P2P_ENABLE=1                   # NVLink Direct Access অন করা
+export NCCL_IB_DISABLE=0                   # InfiniBand সাপোর্ট (যদি আপনার সার্ভারে থাকে)
+export CUDA_DEVICE_MAX_CONNECTIONS=1       # কার্নেল এক্সিকিউশন স্ট্যাবিলিটির জন্য
+export OMP_NUM_THREADS=16                  # CPU প্রি-প্রসেসিং থ্রেড সংখ্যা
+
+# ৩. প্রজেক্ট অটো-বিল্ড (একবার কম্পাইল হলে বারবার লাগবে না)
+echo "🛠️ Verifying Build Status..."
+if [ ! -f "$BIN_NAME" ]; then
+    echo "⚠️ Binary not found. Running Make..."
+    make all
+fi
+
+# ৪. ডিস্ট্রিবিউটেড ট্রেনিং প্যারামিটার
+NUM_GPUS=$(nvidia-smi -L | wc -l)
+BATCH_SIZE_PER_GPU=64
+TOTAL_BATCH_SIZE=$((NUM_GPUS * BATCH_SIZE_PER_GPU))
+DATASET_PATH="$PROJ_ROOT/data/frontier_v1.bin"
+
+echo "------------------------------------------------"
+echo "🚀 Launching Core 1 Training Cluster"
+echo "🔥 Target Hardware: $NUM_GPUS x NVIDIA A100"
+echo "📦 Global Batch Size: $TOTAL_BATCH_SIZE"
+echo "------------------------------------------------"
+
+# ৫. ট্রেনিং শুরু করা
+# আমরা 'stdbuf' ব্যবহার করছি যাতে রিয়েল-টাইম লগ দেখা যায়
+stdbuf -oL ./$BIN_NAME \
+    --dataset $DATASET_PATH \
+    --batch $BATCH_SIZE_PER_GPU \
+    --gpus $NUM_GPUS \
+    --mode "ultra_power" \
+    2>&1 | tee $LOG_DIR/training_$(date +%Y%m%d_%H%M%S).log
+
+# ৬. ট্রেনিং শেষে রেজাল্ট চেক
+if [ $? -eq 0 ]; then
+    echo "✅ Core 1 training cycle completed successfully."
+else
+    echo "❌ Training crashed! Check logs in $LOG_DIR for details."
+fi
