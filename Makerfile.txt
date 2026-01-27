@@ -1,0 +1,62 @@
+# --- Core 1 Titan Engine Build System ---
+
+# ১. কম্পাইলার এবং টুলস সেটআপ
+CXX      = g++
+NVCC     = nvcc
+RUST     = cargo
+RM       = rm -rf
+
+# ২. পাথ এবং ডিরেক্টরি
+SRC_DIR  = src
+INC_DIR  = include
+RUST_DIR = src/rust_tokenizer
+OBJ_DIR  = obj
+BIN      = core1_titan_engine
+
+# ৩. ফ্ল্যাগস (A100 এর জন্য SM_80 আর্কিটেকচার মাস্ট)
+CXXFLAGS = -O3 -std=c++20 -I$(INC_DIR) -fopenmp
+NVFLAGS  = -O3 -arch=sm_80 -Xcompiler -fPIC -I$(INC_DIR)
+RUSTFLAGS = --release
+
+# ৪. লাইব্রেরি লিঙ্কিং (CUDA, NCCL এবং Rust স্ট্যাটিক লাইব্রেরি)
+LIBS = -L$(RUST_DIR)/target/release -lcore1_tokenizer -lcudart -lnccl -lrt -ldl -lpthread
+
+# ৫. অবজেক্ট ফাইল লিস্ট
+OBJS = $(OBJ_DIR)/main.o $(OBJ_DIR)/engine.o $(OBJ_DIR)/loader.o
+
+# --- বিল্ড রুলস ---
+
+all: setup build_rust $(BIN)
+
+# ডিরেক্টরি তৈরি
+setup:
+	@mkdir -p $(OBJ_DIR)
+
+# রাস্ট টোকেনাইজার বিল্ড (Static Library .a তৈরি করবে)
+build_rust:
+	@echo "🦀 Building Rust Tokenizer..."
+	@cd $(RUST_DIR) && $(RUST) build $(RUSTFLAGS)
+
+# সি++ ফাইল কম্পাইল
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@echo "💻 Compiling C++: $<"
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# কুডা (CUDA) ফাইল কম্পাইল
+$(OBJ_DIR)/engine.o: $(SRC_DIR)/engine.cu
+	@echo "🔥 Compiling CUDA Kernels for A100: $<"
+	@$(NVCC) $(NVFLAGS) -c $< -o $@
+
+# ফাইনাল বাইনারি লিঙ্কিং
+$(BIN): $(OBJS)
+	@echo "🔗 Linking everything into Core 1 Engine..."
+	@$(CXX) $(CXXFLAGS) $(OBJS) -o $(BIN) $(LIBS)
+	@echo "✅ Build Complete: ./$(BIN)"
+
+# ক্লিনিং
+clean:
+	@echo "🧹 Cleaning up..."
+	@$(RM) $(OBJ_DIR) $(BIN)
+	@cd $(RUST_DIR) && $(RUST) clean
+
+.PHONY: all setup build_rust clean
