@@ -5,12 +5,10 @@
 #include "../include/core1.h"
 #include "../include/titan_math.h"
 
-// Rust Tokenizer এর সাথে লিঙ্কিং
 extern "C" {
     int* titan_encode(const char* input);
 }
 
-// External CUDA Functions (engine.cu থেকে আসবে)
 extern void launch_attention(float* d_Q, float* d_K, float* d_V, float* d_out, int size);
 
 int main(int argc, char** argv) {
@@ -19,7 +17,6 @@ int main(int argc, char** argv) {
     std::cout << "Target: Neural-Symbolic Dominance over GPT-4o" << std::endl;
     std::cout << "------------------------------------------" << std::endl;
 
-    // ১. Initialization: সুপার কম্পিউটারের ক্ষমতা পরীক্ষা
     int deviceCount;
     cudaGetDeviceCount(&deviceCount);
     if (deviceCount == 0) {
@@ -28,14 +25,12 @@ int main(int argc, char** argv) {
     }
     std::cout << "⚡ Detected " << deviceCount << " A100 GPUs. Initializing Cluster..." << std::endl;
 
-    // ২. Tokenization via Rust (The 'Eye' of Core 1)
     const char* sample_prompt = "Calculate the trajectory for Mars landing using Titan-Logic.";
     std::cout << "📝 Input Prompt: " << sample_prompt << std::endl;
     
     int* tokens = titan_encode(sample_prompt);
     std::cout << "✅ Tokens successfully generated via Rust (Safety-First)." << std::endl;
 
-    // ৩. Memory Allocation on A100 (Ultra-Fast VRAM)
     const int model_dim = 1024; // Core 1's hidden dimension
     float *d_Q, *d_K, *d_V, *d_out;
     cudaMalloc(&d_Q, model_dim * sizeof(float));
@@ -43,17 +38,13 @@ int main(int argc, char** argv) {
     cudaMalloc(&d_V, model_dim * sizeof(float));
     cudaMalloc(&d_out, model_dim * sizeof(float));
 
-    // ৪. Main Training Loop / Reasoning Cycle
     auto start_time = std::chrono::high_resolution_clock::now();
     
     std::cout << "🚀 Launching Ultra-Power Forward Pass..." << std::endl;
     
-    // MoE (Mixture of Experts) এবং Attention লজিক কল করা
     launch_attention(d_Q, d_K, d_V, d_out, model_dim);
-
-    // ৫. Symbolic Reasoning Filter (Titan-Logic)
-    // নিউরাল নেটওয়ার্কের আউটপুটকে ম্যাথমেটিক্যাল ফিল্টার দিয়ে যাচাই করা
-    float raw_neural_data = 0.98f; // ডামি ডেটা
+    
+    float raw_neural_data = 0.98f; 
     float logic_check = TitanLogic::logic_gate_filter(raw_neural_data, 1.0f);
     
     std::cout << "🧠 Symbolic Logic Check: " << (logic_check == 1.0f ? "VALIDATED" : "CORRECTED") << std::endl;
