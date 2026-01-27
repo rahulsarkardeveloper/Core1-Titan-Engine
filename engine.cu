@@ -4,10 +4,7 @@
 #include <iostream>
 #include "../include/core1.h"
 
-// --- ১. Scaled Dot-Product Attention Kernel (GPT Killer) ---
-// এটি A100-এর জন্য বিশেষভাবে অপ্টিমাইজড যাতে মেমরি ব্যান্ডউইথ বাঁচে
 __global__ void titan_attention_kernel(float* Q, float* K, float* V, float* out, int d_model) {
-    // Shared Memory ব্যবহার করে স্পিড কয়েক গুণ বাড়িয়ে দেওয়া
     extern __shared__ float s_data[]; 
 
     int row = blockIdx.y * blockDim.y + threadIdx.y;
@@ -28,37 +25,28 @@ __global__ void titan_attention_kernel(float* Q, float* K, float* V, float* out,
     }
 }
 
-// --- ২. MoE (Mixture of Experts) Router Kernel ---
-// এটি ইনপুট বিশ্লেষণ করে সেরা ২ জন Expert-কে সিলেক্ট করবে
 __global__ void moe_router_kernel(float* input, int* selected_experts, int n_experts, int d_model) {
     int tid = threadIdx.x;
     if (tid == 0) {
-        // সিম্পল গেটিং লজিক (ভবিষ্যতে আমরা এখানে লার্নেবল প্যারামিটার দেব)
         selected_experts[0] = (int)(input[0]) % n_experts; 
         selected_experts[1] = (int)(input[1]) % n_experts;
     }
 }
 
-// --- ৩. C++ Interface: Launching the Power ---
-// main.cpp এখান থেকেই ইঞ্জিনকে কল করবে
 extern "C" void launch_titan_engine(float* d_Q, float* d_K, float* d_V, float* d_out, int d_model) {
-    // A100 এর জন্য সেরা ব্লক সাইজ (৩২x৩২ থ্রেড)
     dim3 threadsPerBlock(32, 32);
     dim3 blocksPerGrid((d_model + 31) / 32, (d_model + 31) / 32);
 
     std::cout << "🛰️ Executing Titan-Attention on A100 High-Speed Cores..." << std::endl;
 
-    // কার্নেল লঞ্চ
     titan_attention_kernel<<<blocksPerGrid, threadsPerBlock>>>(d_Q, d_K, d_V, d_out, d_model);
     
-    // কোনো এরর আছে কি না চেক করা
     cudaError_t err = cudaDeviceSynchronize();
     if (err != cudaSuccess) {
         std::cerr << "❌ CUDA Error: " << cudaGetErrorString(err) << std::endl;
     }
 }
 
-// --- ৪. Backpropagation: Gradient Descent Kernel ---
 __global__ void titan_backward_kernel(float* weights, float* grads, float lr, int size) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < size) {
