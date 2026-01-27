@@ -4,8 +4,7 @@
 #include <cmath>
 
 namespace TitanLogic {
-    // Neural-Symbolic Hybrid Gate
-    // এটি নিশ্চিত করে যে ম্যাথমেটিক্যাল উত্তরগুলো লজিক্যাল সীমার মধ্যে থাকে
+   
     inline float validate_reasoning(float neural_val, float min_bound, float max_bound) {
         if (neural_val < min_bound) return min_bound;
         if (neural_val > max_bound) return max_bound;
