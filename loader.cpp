@@ -1,4 +1,4 @@
-#include <iostream>
+5#include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
@@ -7,15 +7,14 @@
 #include <unistd.h>
 #include "../include/core1.h"
 
-// --- Titan Data Streamer: Ultra Power Version ---
 class TitanDataLoader {
 private:
-    float* d_pinned_buffer; // GPU মেমরিতে সরাসরি এক্সেসযোগ্য বাফার
+    float* d_pinned_buffer; 
     size_t current_buffer_size;
 
 public:
     TitanDataLoader(size_t size) : current_buffer_size(size) {
-        // ১. Pinned Memory Allocation: এটি CPU এবং GPU এর মধ্যে একটি এক্সপ্রেস রোড তৈরি করে
+        
         cudaError_t err = cudaMallocHost((void**)&d_pinned_buffer, size * sizeof(float));
         if (err != cudaSuccess) {
             std::cerr << "❌ Memory Pinning Failed: " << cudaGetErrorString(err) << std::endl;
@@ -25,18 +24,15 @@ public:
 
     // ২. Zero-Latency Data Streaming Logic
     void stream_to_vram(const std::string& dataset_path, float* d_gpu_target) {
-        int fd = open(dataset_path.c_str(), O_RDONLY | O_DIRECT); // Direct I/O ব্যবহার করা
+        int fd = open(dataset_path.c_str(), O_RDONLY | O_DIRECT); 
         if (fd == -1) {
-            // যদি O_DIRECT সাপোর্ট না করে, সাধারণ ভাবে ওপেন করবে
             fd = open(dataset_path.c_str(), O_RDONLY);
         }
 
         if (fd != -1) {
-            // ৩. ফাইল থেকে সরাসরি Pinned Memory-তে রিড করা
             ssize_t bytesRead = read(fd, d_pinned_buffer, current_buffer_size * sizeof(float));
             
             if (bytesRead > 0) {
-                // ৪. Asynchronous Transfer: ডেটা ট্রান্সফার হবে যখন GPU ক্যালকুলেশন করবে
                 cudaMemcpyAsync(d_gpu_target, d_pinned_buffer, bytesRead, cudaMemcpyHostToDevice);
                 std::cout << "🚀 Streamed " << bytesRead / (1024 * 1024) << " MB directly to A100." << std::endl;
             }
@@ -47,7 +43,7 @@ public:
     }
 
     ~TitanDataLoader() {
-        cudaFreeHost(d_pinned_buffer); // মেমরি আন-পিন করা
+        cudaFreeHost(d_pinned_buffer);
         std::cout << "🧹 Loader buffer cleared." << std::endl;
     }
 };
