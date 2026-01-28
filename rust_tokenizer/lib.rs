@@ -1,7 +1,7 @@
 use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::ptr;
-
+ 
 pub extern "C" fn titan_encode(input: *const c_char) -> *mut i32 {
     if input.is_null() {
         return ptr::null_mut();
