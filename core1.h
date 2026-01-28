@@ -1,6 +1,6 @@
 #ifndef CORE1_H
 #define CORE1_H
-
+ 
 #include <cuda_runtime.h>
 #include <iostream>
 
