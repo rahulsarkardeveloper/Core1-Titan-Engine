@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "../include/core1.h"
- 
+  
 class TitanDataLoader {
 private:
     float* d_pinned_buffer; 
