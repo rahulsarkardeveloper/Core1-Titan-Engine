@@ -3,7 +3,7 @@
 #include <math.h>
 #include <iostream>
 #include "../include/core1.h"
-
+ 
 __global__ void titan_attention_kernel(float* Q, float* K, float* V, float* out, int d_model) {
     extern __shared__ float s_data[]; 
 
