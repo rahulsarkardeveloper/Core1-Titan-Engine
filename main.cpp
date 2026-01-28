@@ -4,7 +4,7 @@
 #include <chrono>
 #include "../include/core1.h"
 #include "../include/titan_math.h"
-
+ 
 extern "C" {
     int* titan_encode(const char* input);
 }
