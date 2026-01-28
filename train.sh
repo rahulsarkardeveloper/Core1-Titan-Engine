@@ -2,7 +2,7 @@ PROJ_ROOT=$(pwd)
 BIN_NAME="core1_titan_engine"
 LOG_DIR="$PROJ_ROOT/logs"
 mkdir -p $LOG_DIR
-
+ 
 export NCCL_DEBUG=WARN                     
 export NCCL_P2P_ENABLE=1                   
 export NCCL_IB_DISABLE=0                   
