@@ -4,7 +4,7 @@ CXX      = g++
 NVCC     = nvcc
 RUST     = cargo
 RM       = rm -rf
-
+ 
 SRC_DIR  = src
 INC_DIR  = include
 RUST_DIR = src/rust_tokenizer
