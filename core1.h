@@ -4,7 +4,6 @@
 #include <cuda_runtime.h>
 #include <iostream>
 
-// --- Macros for High Performance ---
 #define CUDA_CHECK(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true) {
    if (code != cudaSuccess) {
@@ -13,22 +12,18 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
    }
 }
 
-// --- Function Prototypes ---
 
-// CUDA Kernels (src/engine.cu থেকে)
 extern "C" void launch_titan_engine(float* d_Q, float* d_K, float* d_V, float* d_out, int d_model);
 
-// Rust Tokenizer (src/rust_tokenizer/lib.rs থেকে)
 extern "C" {
     int* titan_encode(const char* input);
     void titan_free_tokens(int* ptr);
 }
 
-// DataLoader (src/loader.cpp থেকে)
 extern "C" void start_titan_data_stream(const char* file_path, float* d_gpu_ptr, size_t size);
 
 // --- Constants ---
-const int CORE1_HIDDEN_DIM = 4096; // A100 এর জন্য অপ্টিমাইজড ডাইমেনশন
-const int CORE1_NUM_EXPERTS = 16;   // MoE আর্কিটেকচার
+const int CORE1_HIDDEN_DIM = 4096;
+const int CORE1_NUM_EXPERTS = 16;
 
 #endif
