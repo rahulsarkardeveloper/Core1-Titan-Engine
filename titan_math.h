@@ -1,6 +1,6 @@
 #ifndef TITAN_MATH_H
 #define TITAN_MATH_H
-
+ 
 #include <cmath>
 
 namespace TitanLogic {
