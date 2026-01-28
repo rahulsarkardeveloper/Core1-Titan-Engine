@@ -1,4 +1,4 @@
-# --- Core 1 Titan Engine Build System ---
+# --- Core 1 Titan Engine Build System --- 
 
 CXX      = g++
 NVCC     = nvcc
