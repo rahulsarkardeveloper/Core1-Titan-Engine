@@ -1,0 +1,95 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Titan Ultra Survival – Offline Mesh</title>
+<style>
+body{margin:0;font-family:system-ui;background:#000;color:#0f0}
+header{padding:10px;text-align:center;font-size:22px;font-weight:bold;background:#020}
+section{padding:10px;border-bottom:1px solid #030}
+button{background:#030;color:#0f0;border:1px solid #0f0;padding:8px;margin:5px}
+.alert{color:#f00;font-weight:bold}
+</style>
+</head>
+<body>
+<header>🧭 TITAN ULTRA OFFLINE SURVIVAL</header><section>
+<h3>🧭 Compass + Sun Direction</h3>
+<div id="compass">Waiting for sensor…</div>
+</section><section>
+<h3>🔋 Battery Status</h3>
+<div id="battery">Checking…</div>
+</section><section>
+<h3>📍 GPS Location (Offline Save)</h3>
+<button onclick="saveLocation()">Save Location</button>
+<div id="location"></div>
+</section><section>
+<h3>🆘 SOS Mode</h3>
+<button onclick="sos()">ACTIVATE SOS</button>
+<div id="sos"></div>
+</section><section>
+<h3>🛰️ Mesh Relay (Human Network)</h3>
+<button onclick="generateMesh()">Generate Mesh Packet</button>
+<textarea id="mesh" style="width:100%;height:80px"></textarea>
+</section><section>
+<h3>🌲 Survival Brain</h3>
+<div id="brain"></div>
+</section><script>
+// Compass
+window.addEventListener('deviceorientation',e=>{
+ if(e.alpha!==null){
+  document.getElementById('compass').innerText=
+   'Direction: '+Math.round(e.alpha)+'°';
+ }
+});
+
+// Battery
+if(navigator.getBattery){
+ navigator.getBattery().then(b=>{
+  function update(){
+   document.getElementById('battery').innerText=
+    Math.round(b.level*100)+'%'+(b.level<0.1?' ⚠ SURVIVAL MODE':'');
+   if(b.level<0.1)document.body.style.background='#200';
+  }
+  update();b.onlevelchange=update;
+ });
+}
+
+// Location
+function saveLocation(){
+ navigator.geolocation.getCurrentPosition(p=>{
+  const data={lat:p.coords.latitude,lon:p.coords.longitude,t:Date.now()};
+  localStorage.setItem('last_location',JSON.stringify(data));
+  document.getElementById('location').innerText=
+   'Saved: '+data.lat+','+data.lon;
+ });
+}
+
+// SOS
+function sos(){
+ document.getElementById('sos').innerHTML='<span class="alert">SOS ACTIVE</span>';
+ let i=0;setInterval(()=>{
+  document.body.style.background=i%2?'#000':'#400';i++;
+ },500);
+}
+
+// Mesh
+function generateMesh(){
+ const payload={
+  id:Math.random().toString(36).slice(2),
+  time:Date.now(),
+  location:localStorage.getItem('last_location')
+ };
+ document.getElementById('mesh').value=JSON.stringify(payload);
+}
+
+// Survival Brain
+const tips=[
+ 'Find water source first',
+ 'Stay calm and save battery',
+ 'Use sun for direction',
+ 'Stay visible for rescue'
+];
+document.getElementById('brain').innerText=
+ tips[Math.floor(Math.random()*tips.length)];
+</script></body>
+</html>
