@@ -1,95 +1,120 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="bn">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Titan Ultra Survival – Offline Mesh</title>
+<title>TITAN ULTRA | SURVIVAL MESH</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 <style>
-body{margin:0;font-family:system-ui;background:#000;color:#0f0}
-header{padding:10px;text-align:center;font-size:22px;font-weight:bold;background:#020}
-section{padding:10px;border-bottom:1px solid #030}
-button{background:#030;color:#0f0;border:1px solid #0f0;padding:8px;margin:5px}
-.alert{color:#f00;font-weight:bold}
+:root{--bg:#000;--a:#00ff88;--r:#ff0033}
+body{margin:0;background:var(--bg);color:var(--a);font-family:monospace;height:100vh;display:flex;flex-direction:column}
+#map{height:30vh}
+#log{flex:1;overflow:auto;padding:8px;font-size:12px}
+.msg{border:1px solid #033;padding:6px;margin:4px 0}
+.out{border-color:var(--a)}
+.in{border-color:#0f0}
+.sos{border-color:var(--r);color:var(--r)}
+#bar{display:flex;gap:5px;padding:5px;border-top:1px solid var(--a)}
+button,input{background:#000;color:var(--a);border:1px solid var(--a);padding:6px}
+#acceptBox{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center}
+#acceptCard{border:2px solid var(--a);padding:20px}
 </style>
 </head>
+
 <body>
-<header>🧭 TITAN ULTRA OFFLINE SURVIVAL</header><section>
-<h3>🧭 Compass + Sun Direction</h3>
-<div id="compass">Waiting for sensor…</div>
-</section><section>
-<h3>🔋 Battery Status</h3>
-<div id="battery">Checking…</div>
-</section><section>
-<h3>📍 GPS Location (Offline Save)</h3>
-<button onclick="saveLocation()">Save Location</button>
-<div id="location"></div>
-</section><section>
-<h3>🆘 SOS Mode</h3>
-<button onclick="sos()">ACTIVATE SOS</button>
-<div id="sos"></div>
-</section><section>
-<h3>🛰️ Mesh Relay (Human Network)</h3>
-<button onclick="generateMesh()">Generate Mesh Packet</button>
-<textarea id="mesh" style="width:100%;height:80px"></textarea>
-</section><section>
-<h3>🌲 Survival Brain</h3>
-<div id="brain"></div>
-</section><script>
-// Compass
-window.addEventListener('deviceorientation',e=>{
- if(e.alpha!==null){
-  document.getElementById('compass').innerText=
-   'Direction: '+Math.round(e.alpha)+'°';
+
+<div id="map"></div>
+<div id="log"></div>
+
+<div id="bar">
+<input id="txt" placeholder="MESSAGE">
+<button onclick="send()">SEND</button>
+<button onclick="sos()">SOS</button>
+<button onclick="showQR()">LINK</button>
+</div>
+
+<div id="acceptBox">
+<div id="acceptCard">
+<p>📡 INCOMING MESSAGE</p>
+<button onclick="acceptMsg()">ACCEPT</button>
+<button onclick="denyMsg()">DENY</button>
+</div>
+</div>
+
+<div id="qrBox" style="display:none;position:fixed;inset:0;background:#000;justify-content:center;align-items:center"></div>
+
+<script>
+let pendingMsg=null;
+let myId="NODE-"+Math.random().toString(36).substr(2,4);
+let map,myMarker;
+
+map=L.map('map',{zoomControl:false}).setView([22.57,88.36],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+myMarker=L.marker([0,0]).addTo(map);
+
+navigator.geolocation.watchPosition(p=>{
+ myMarker.setLatLng([p.coords.latitude,p.coords.longitude])
+});
+
+navigator.getBattery?.().then(b=>{
+ b.onlevelchange=()=>log("🔋 Battery: "+Math.round(b.level*100)+"%")
+});
+
+window.addEventListener("deviceorientation",e=>{
+ if(e.alpha) log("🧭 Compass: "+Math.round(e.alpha)+"°")
+});
+
+function log(t,cls="in"){
+ let d=document.createElement("div");
+ d.className="msg "+cls;
+ d.textContent=t;
+ logBox.appendChild(d);
+ logBox.scrollTop=logBox.scrollHeight;
+}
+const logBox=document.getElementById("log");
+
+function send(){
+ let v=txt.value;
+ if(!v)return;
+ let packet={from:myId,text:v,ts:Date.now()};
+ localStorage.setItem("TITAN_MSG",JSON.stringify(packet));
+ log("YOU: "+v,"out");
+ txt.value="";
+}
+
+window.addEventListener("storage",e=>{
+ if(e.key==="TITAN_MSG"){
+  pendingMsg=JSON.parse(e.newValue);
+  document.getElementById("acceptBox").style.display="flex";
  }
 });
 
-// Battery
-if(navigator.getBattery){
- navigator.getBattery().then(b=>{
-  function update(){
-   document.getElementById('battery').innerText=
-    Math.round(b.level*100)+'%'+(b.level<0.1?' ⚠ SURVIVAL MODE':'');
-   if(b.level<0.1)document.body.style.background='#200';
-  }
-  update();b.onlevelchange=update;
- });
+function acceptMsg(){
+ document.getElementById("acceptBox").style.display="none";
+ log("FROM "+pendingMsg.from+": "+pendingMsg.text,"in");
 }
 
-// Location
-function saveLocation(){
- navigator.geolocation.getCurrentPosition(p=>{
-  const data={lat:p.coords.latitude,lon:p.coords.longitude,t:Date.now()};
-  localStorage.setItem('last_location',JSON.stringify(data));
-  document.getElementById('location').innerText=
-   'Saved: '+data.lat+','+data.lon;
- });
+function denyMsg(){
+ pendingMsg=null;
+ document.getElementById("acceptBox").style.display="none";
 }
 
-// SOS
 function sos(){
- document.getElementById('sos').innerHTML='<span class="alert">SOS ACTIVE</span>';
- let i=0;setInterval(()=>{
-  document.body.style.background=i%2?'#000':'#400';i++;
- },500);
+ log("🚨 SOS SENT","sos");
 }
 
-// Mesh
-function generateMesh(){
- const payload={
-  id:Math.random().toString(36).slice(2),
-  time:Date.now(),
-  location:localStorage.getItem('last_location')
- };
- document.getElementById('mesh').value=JSON.stringify(payload);
+function showQR(){
+ let box=document.getElementById("qrBox");
+ box.style.display="flex";
+ box.innerHTML='<div id="qr"></div>';
+ new QRCode(document.getElementById("qr"),location.href);
+ box.onclick=()=>box.style.display="none";
 }
+</script>
 
-// Survival Brain
-const tips=[
- 'Find water source first',
- 'Stay calm and save battery',
- 'Use sun for direction',
- 'Stay visible for rescue'
-];
-document.getElementById('brain').innerText=
- tips[Math.floor(Math.random()*tips.length)];
-</script></body>
+</body>
 </html>
